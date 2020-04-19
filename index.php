@@ -5,6 +5,11 @@
     $password = "mysql";
     $dbname = "projmanager";
 
+    if(isset($_GET['path']) and $_GET['path'] !== $table){
+        if($_GET['path'] == 'darbuotojai' or $_GET['path'] == 'projektai')
+            $table = $_GET['path'];
+    }
+
     $conn = mysqli_connect($servername, $username, $password, $dbname);
     if (!$conn) 
         die("Connection failed: " . mysqli_connect_error());
