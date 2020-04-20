@@ -14,9 +14,14 @@
     if (!$conn) 
         die("Connection failed: " . mysqli_connect_error());
 
-    $sql = "SELECT " . $table. ".id, " . $table.".name, " . ($table === 'projektai' ? 'darbuotojai' : 'projektai' ) . ".name " . "FROM " . $table . 
+    $sql = "SELECT " 
+                . $table. ".id, " 
+                . $table.".name, GROUP_CONCAT(" . ($table === 'projektai' ? 'darbuotojai' : 'projektai' ) . ".name SEPARATOR \", \")" . 
+            " FROM " . $table . 
             " LEFT JOIN " . ($table === 'projektai' ? 'darbuotojai' : 'projektai') . 
-            " ON " . ($table === 'projektai' ? 'darbuotojai.proj_id = projektai.id' : 'darbuotojai.proj_id = projektai.id');
+            " ON " . ($table === 'projektai' ? 'darbuotojai.proj_id = projektai.id' : 'darbuotojai.proj_id = projektai.id') .
+            " GROUP BY " . $table . ".id;";
+    
     /*
         SELECT darbuotojai.id, darbuotojai.name, projektai.name FROM darbuotojai
         JOIN projektai ON darbuotojai.proj_id = projektai.id;
