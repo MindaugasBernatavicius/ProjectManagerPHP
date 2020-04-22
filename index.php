@@ -25,8 +25,18 @@
         $sql_update = "UPDATE " . $table 
                     . " SET id=" . $_POST['id'] 
                     . ", name='" . $_POST['name'] 
+                    . (isset($_POST['proj_id'])? "', proj_id='" . $_POST['proj_id'] : "")
                     . "' WHERE id=" . $_GET['update'];
         $stmt = $conn->prepare($sql_update);
+        $stmt->execute();
+        header("Location: /ProjectManagerPHP/?path=" . $_GET['path']);
+    }
+
+    if(isset($_POST['ADD'])){
+        print($_POST['name']);
+        $sql_add = "INSERT INTO " . $table . " (`name`) VALUES (?)"; 
+        $stmt = $conn->prepare($sql_add);
+        $stmt -> bind_param("s", $_POST['name']);
         $stmt->execute();
         header("Location: /ProjectManagerPHP/?path=" . $_GET['path']);
     }
@@ -39,13 +49,12 @@
             " ON " . ($table === 'projektai' ? 'darbuotojai.proj_id = projektai.id' : 'darbuotojai.proj_id = projektai.id') .
             " GROUP BY " . $table . ".id;";
     
-    /*
-        SELECT darbuotojai.id, darbuotojai.name, projektai.name FROM darbuotojai
-        JOIN projektai ON darbuotojai.proj_id = projektai.id;
+    /*  SELECT darbuotojai.id, darbuotojai.name, projektai_sql.name FROM darbuotojai
+        JOIN projektai_sql ON darbuotojai.proj_id = projektai_sql.id;
 
-        SELECT projektai.id, projektai.name, darbuotojai.name FROM projektai
-        JOIN darbuotojai ON darbuotojai.proj_id = projektai.id;
-    */ 
+        SELECT projektai_sql.id, projektai_sql.name, darbuotojai.name FROM projektai_sql
+        JOIN darbuotojai ON darbuotojai.proj_id = projektai_sql.id; */ 
+
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $stmt->bind_result($id, $mainEntityName, $relatedEntityName);
@@ -61,6 +70,9 @@
             main {
                 flex: 1 0 auto;
             }
+            select {
+                display: inline-block !important;
+            }
         </style>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -69,7 +81,7 @@
         <header class="mdl-layout__header mdl-layout__header--waterfall mdl-layout__header--waterfall-hide-top" id="djpsych-header">
             <nav>
                 <div class="nav-wrapper">
-                    <a href="?path=projektai" class="brand-logo right" style="padding-right: 20px">Projekto valdymas</a>
+                    <a href="?path=projektai_sql" class="brand-logo right" style="padding-right: 20px">Projekto valdymas</a>
                     <ul id="nav-mobile" class="left">
                         <li><a href="?path=projektai">Projektai</a></li>
                         <li><a href="?path=darbuotojai">Darbuotojai</a></li>
@@ -79,7 +91,7 @@
         </header>
         <main style="padding: 30px" class="mdl-layout__content main-layout">
             <?php
-                echo '<table><th>Id</th><th>Name</th><th>' . ($table === 'projektai' ? 'Darbuotojai' : 'Projektai') . '</th><th>Actions</th>';
+                echo '<table><th>Id</th><th>Name</th><th>' . ($table === 'projektai_sql' ? 'Darbuotojai' : 'Projektai') . '</th><th>Actions</th>';
                 while ($stmt->fetch()){
                     echo "<tr>
                             <td>" . $id . "</td>
@@ -94,19 +106,38 @@
                 echo '</table>';
 
                 if(isset($_GET['update'])){
+                    $projektai_sql = mysqli_query($conn, "SELECT id, name FROM Projektai");
+                    $projektai = [];
+                    if (mysqli_num_rows($projektai_sql) > 0)
+                        while($projektas = mysqli_fetch_assoc($projektai_sql))
+                            $projektai[$projektas['id']] = $projektas['name'];
+
                     $sql_update = "SELECT id, name FROM " . $table . " WHERE id = " . $_GET['update'];
                     $stmt = $conn->prepare($sql_update);
                     $stmt->execute();
                     $stmt->bind_result($id, $mainEntityName);
+                    
                     while ($stmt->fetch()){
-                        echo "<br><br>";
-                        echo "<form style=\"max-width: 150px\" action=\"\" method=\"POST\">
+                        echo "<br><br><form style=\"max-width: 150px\" action=\"\" method=\"POST\">
                             <input type=\"text\" name=\"id\" value=\"" . $id . "\">
-                            <input type=\"text\" name=\"name\" text value=\"" . $mainEntityName . "\">
-                            <input type=\"submit\" value=\"UPDATE\" name=\"update\">
+                            <input type=\"text\" name=\"name\" text value=\"" . $mainEntityName . "\">";
+                            if($_GET['path'] === 'darbuotojai'){
+                                echo "<select name=\"proj_id\">
+                                <option value=\"\" disabled selected>Projektas:</option>";
+                                foreach($projektai as $p_id => $p_name)
+                                    echo "<option value=\"$p_id\">$p_name</option>";
+                                echo "</select>";
+                            }
+                            echo "<input type=\"submit\" value=\"UPDATE\" name=\"update\">
                         </form>";
                     }
-                }
+                } else
+                    echo "<br><br><form style=\"max-width: 150px\" action=\"\" method=\"POST\">
+                            <input type=\"text\" name=\"name\" value=\"\" placeholder=\"" 
+                                . ($_GET['path'] === 'projektai' ? 'Projekto pavadinimas' : 'Darbuotojo vardas')  . "\">
+                            <input type=\"submit\" value=\"ADD " 
+                                . ($_GET['path'] === 'projektai' ? 'Projektas' : 'Darbuotojas') . "\" name=\"ADD\">
+                        </form>";
             ?>
         </main>
         <footer class="page-footer">
