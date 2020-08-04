@@ -91,7 +91,7 @@
         </header>
         <main style="padding: 30px" class="mdl-layout__content main-layout">
             <?php
-                echo '<table><th>Id</th><th>Name</th><th>' . ($table === 'projektai_sql' ? 'Darbuotojai' : 'Projektai') . '</th><th>Actions</th>';
+                echo '<table><th>Id</th><th>Name</th><th>' . ($table === 'projektai' ? 'Darbuotojai' : 'Projektai') . '</th><th>Actions</th>';
                 while ($stmt->fetch()){
                     echo "<tr>
                             <td>" . $id . "</td>
